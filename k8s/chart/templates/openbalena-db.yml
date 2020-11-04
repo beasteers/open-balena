@@ -1,3 +1,4 @@
+{{ with .Values.deployments.db }}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -8,7 +9,7 @@ metadata:
   name: openbalena-db
 spec:
   serviceName: openbalena-db
-  replicas: {{ index .Values "deployments" "db" "replicas" }}
+  replicas: {{ .replicas }}
   selector:
     matchLabels:
       app: openbalena
@@ -21,7 +22,7 @@ spec:
         component: db
     spec:
       containers:
-      - image: '{{ index .Values "deployments" "db" "image" }}:{{ index .Values "deployments" "db" "version" }}'
+      - image: '{{ .image }}:{{ .version }}'
         name: openbalena-db
         resources: {}
         volumeMounts:
@@ -40,7 +41,7 @@ spec:
       - ReadWriteOnce
       resources:
         requests:
-          storage: {{ index .Values "deployments" "db" "volume" "storage" }}
+          storage: {{ .volume.storage }}
 ---
 apiVersion: v1
 kind: Service
@@ -60,3 +61,4 @@ spec:
     component: db
 status:
   loadBalancer: {}
+{{ end }}

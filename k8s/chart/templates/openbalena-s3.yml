@@ -1,4 +1,5 @@
 {{- if index .Values "deployments" "s3" "enabled" }}
+{{ with .Values.deployments.registry }}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -9,7 +10,7 @@ metadata:
   name: openbalena-s3
 spec:
   serviceName: openbalena-s3
-  replicas: {{ index .Values "deployments" "s3" "replicas" }}
+  replicas: {{ .replicas }}
   selector:
     matchLabels:
       app: openbalena
@@ -22,7 +23,7 @@ spec:
         component: s3
     spec:
       containers:
-      - image: '{{ index .Values "deployments" "s3" "image" }}:{{ index .Values "deployments" "s3" "version" }}'
+      - image: '{{ .image }}:{{ .version }}'
         name: openbalena-s3
         resources: {}
         securityContext:
@@ -35,11 +36,11 @@ spec:
         - name: CONFD_BACKEND
           value: "ENV"
         - name: S3_MINIO_ACCESS_KEY
-          value: "{{ index .Values "deployments" "s3" "config" "access-key" }}"
+          value: "{{ .config.access_key }}"
         - name: S3_MINIO_SECRET_KEY
-          value: "{{ index .Values "deployments" "s3" "config" "secret-key" }}"
+          value: "{{ .config.secret_key }}"
         - name: BUCKETS
-          value: "{{ index .Values "deployments" "s3" "config" "bucket" }}"
+          value: "{{ .config.bucket }}"
         volumeMounts:
         - mountPath: /export
           name: openbalena-s3-volume
@@ -65,7 +66,7 @@ spec:
       - ReadWriteOnce
       resources:
         requests:
-          storage: {{ index .Values "deployments" "s3" "volume" "storage" }}
+          storage: {{ .volume.storage }}
 ---
 apiVersion: v1
 kind: Service
@@ -85,4 +86,5 @@ spec:
     component: s3
 status:
   loadBalancer: {}
+{{- end }}
 {{- end }}

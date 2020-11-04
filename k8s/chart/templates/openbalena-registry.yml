@@ -1,3 +1,4 @@
+{{ with .Values.deployments.registry }}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -8,7 +9,7 @@ metadata:
   name: openbalena-registry
 spec:
   serviceName: openbalena-registry
-  replicas: {{ index .Values "deployments" "registry" "replicas" }}
+  replicas: {{ .replicas }}
   selector:
     matchLabels:
       app: openbalena
@@ -21,7 +22,8 @@ spec:
         component: registry
     spec:
       containers:
-      - image: '{{ index .Values "deployments" "registry" "image" }}:{{ index .Values "deployments" "registry" "version" }}'
+
+      - image: '{{ .image }}:{{ .version }}'
         name: openbalena-registry
         resources: {}
         securityContext:
@@ -34,17 +36,17 @@ spec:
         - name: CONFD_BACKEND
           value: "ENV"
         - name: API_TOKENAUTH_CRT
-          value: "{{ index .Values "keys" "token-auth-pub" }}"
+          value: "{{ $.Values.keys.token_auth_pub }}"
         - name: BALENA_REGISTRY2_HOST
-          value: "registry.{{ index .Values "hostname" }}"
+          value: "{{ .ingress.subdomain }}.{{ $.Values.hostname }}"
         - name: BALENA_ROOT_CA
-          value: "{{ index .Values "certificates" "root" "ca" }}"
+          value: "{{ $.Values.certificates.root.ca }}"
         - name: BALENA_TOKEN_AUTH_ISSUER
-          value: "api.{{ index .Values "hostname" }}"
+          value: "{{ $.Values.deployments.api.ingress.subdomain }}.{{ $.Values.hostname }}"
         - name: BALENA_TOKEN_AUTH_REALM
-          value: "https://api.{{ index .Values "hostname" }}/auth/v1/token"
+          value: "https://{{ $.Values.deployments.api.ingress.subdomain }}.{{ $.Values.hostname }}/auth/v1/token"
         - name: COMMON_REGION
-          value: "{{ index .Values "deployments" "s3" "config" "region" }}"
+          value: "{{ $.Values.deployments.s3.config.region }}"
         - name: REGISTRY2_CACHE_ENABLED
           value: "false"
         - name: REGISTRY2_CACHE_ADDR
@@ -56,15 +58,15 @@ spec:
         - name: REGISTRY2_CACHE_MAXMEMORY_POLICY
           value: "allkeys-lru"
         - name: REGISTRY2_S3_REGION_ENDPOINT
-          value: "{{ index .Values "deployments" "s3" "config" "endpoint" }}"
+          value: "{{ $.Values.deployments.s3.config.endpoint }}"
         - name: REGISTRY2_S3_BUCKET
-          value: "{{ index .Values "deployments" "s3" "config" "bucket" }}"
+          value: "{{ $.Values.deployments.s3.config.bucket }}"
         - name: REGISTRY2_S3_KEY
-          value: "{{ index .Values "deployments" "s3" "config" "access-key" }}"
+          value: "{{ $.Values.deployments.s3.config.access_key }}"
         - name: REGISTRY2_S3_SECRET
-          value: "{{ index .Values "deployments" "s3" "config" "secret-key" }}"
+          value: "{{ $.Values.deployments.s3.config.secret_key }}"
         - name: REGISTRY2_SECRETKEY
-          value: "{{ index .Values "keys" "registry-secret-key" }}"
+          value: "{{ $.Values.keys.registry_secret_key }}"
         - name: REGISTRY2_STORAGEPATH
           value: "/data"
         volumeMounts:
@@ -93,7 +95,7 @@ spec:
       - ReadWriteOnce
       resources:
         requests:
-          storage: {{ index .Values "deployments" "registry" "volume" "storage" }}
+          storage: {{ .volume.storage }}
 ---
 apiVersion: v1
 kind: Service
@@ -113,3 +115,4 @@ spec:
     component: registry
 status:
   loadBalancer: {}
+{{- end }}

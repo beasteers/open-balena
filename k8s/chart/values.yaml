@@ -9,12 +9,12 @@ hostname: "${OPENBALENA_HOST_NAME}" # OPENBALENA_HOST_NAME
 config:
   email: "${OPENBALENA_SUPERUSER_EMAIL}" # OPENBALENA_SUPERUSER_EMAIL
   password: "${OPENBALENA_SUPERUSER_PASSWORD}" # OPENBALENA_SUPERUSER_PASSWORD
-  production-mode: "${OPENBALENA_PRODUCTION_MODE}" # OPENBALENA_PRODUCTION_MODE
-  ssh-authorized-keys: "${OPENBALENA_SSH_AUTHORIZED_KEYS}" # OPENBALENA_SSH_AUTHORIZED_KEYS
+  production_mode: "${OPENBALENA_PRODUCTION_MODE}" # OPENBALENA_PRODUCTION_MODE
+  ssh_authorized_keys: "${OPENBALENA_SSH_AUTHORIZED_KEYS}" # OPENBALENA_SSH_AUTHORIZED_KEYS
 
   # NGINX Ingress uses this variable
   # If your containers exceed the size of 200mb, change this!
-  client-max-body-size: "200m"
+  client_max_body_size: "200m"
 
 # Deployments
 deployments:
@@ -23,19 +23,35 @@ deployments:
     version: "${OPENBALENA_API_VERSION_TAG}"
     replicas: 1
 
-    sentry-dsn: ""
+    sentry_dsn: ""
+    ingress:
+      enabled: true
+      annotations: {}
+      subdomain: api
+      tls: true
 
   vpn:
     image: balena/open-balena-vpn
     version: "${OPENBALENA_VPN_VERSION_TAG}"
     replicas: 1
 
-    sentry-dsn: ""
+    sentry_dsn: ""
+    ingress:
+      enabled: true
+      annotations: {}
+      subdomain: vpn
+      tls: false
+      port: 443
 
   registry:
     image: balena/open-balena-registry
     version: "${OPENBALENA_REGISTRY_VERSION_TAG}"
     replicas: 1
+    ingress:
+      enabled: false
+      annotations: {}
+      subdomain: registry
+      tls: true
 
     volume:
       storage: "1Gi"
@@ -53,8 +69,14 @@ deployments:
       bucket: "${OPENBALENA_S3_BUCKETS}" # OPENBALENA_S3_BUCKETS / OPENBALENA_REGISTRY2_S3_BUCKET
       endpoint: "${OPENBALENA_S3_ENDPOINT}" # OPENBALENA_S3_ENDPOINT
       region: "${OPENBALENA_S3_REGION}" # OPENBALENA_S3_REGION
-      access-key: "${OPENBALENA_S3_ACCESS_KEY}" # OPENBALENA_S3_ACCESS_KEY
-      secret-key: "${OPENBALENA_S3_SECRET_KEY}" # OPENBALENA_S3_SECRET_KEY
+      access_key: "${OPENBALENA_S3_ACCESS_KEY}" # OPENBALENA_S3_ACCESS_KEY
+      secret_key: "${OPENBALENA_S3_SECRET_KEY}" # OPENBALENA_S3_SECRET_KEY
+
+    ingress:
+      enabled: true
+      annotations: {}
+      subdomain: 's3'
+      tls: true
 
     volume:
       storage: "25Gi"
@@ -63,6 +85,12 @@ deployments:
     image: balena/open-balena-db
     version: "${OPENBALENA_DB_VERSION_TAG}"
     replicas: 1
+
+    ingress:
+      enabled: false
+      annotations: {}
+      subdomain: db
+      tls: true
 
     volume:
       storage: "1Gi"
@@ -76,6 +104,12 @@ deployments:
     version: "alpine"
     replicas: 1
 
+    ingress:
+      enabled: false
+      annotations: {}
+      subdomain: redis
+      tls: true
+
     config:
       host: "openbalena-redis"
       port: 6379
@@ -83,80 +117,81 @@ deployments:
     volume:
       storage: "1Gi"
 
+ingressAnnotations:
+  traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+  traefik.ingress.kubernetes.io/router.tls: "true"
+  # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  # kubernetes.io/ingress.class: "nginx"
+  # nginx.ingress.kubernetes.io/proxy-body-size: "{{ .Values.config.client_max_body_size }}"
+
+vpnIngressAnnotations:
+  traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+  traefik.ingress.kubernetes.io/router.tls: "true"
+  # kubernetes.io/ingress.class: "haproxy"
+  ingress.kubernetes.io/ssl-redirect: "false"
+  # - "traefik.enable=true"
+  # - "traefik.tcp.services.openVpn.loadBalancer.server.port=443"
+  # - "traefik.tcp.routers.openVpn.rule=HostSNI(`*`)"
+  # - "traefik.tcp.routers.openVpn.entrypoints=websecure"
+
 # Keys
 keys:
-  cookie-secret: "${OPENBALENA_COOKIE_SESSION_SECRET}" # OPENBALENA_COOKIE_SESSION_SECRET
-  jwt-secret: ${OPENBALENA_JWT_SECRET} # OPENBALENA_JWT_SECRET
-  registry-code: ${OPENBALENA_RESINOS_REGISTRY_CODE} # OPENBALENA_RESINOS_REGISTRY_CODE
-  service-api-key: "${OPENBALENA_VPN_SERVICE_API_KEY}" # OPENBALENA_VPN_SERVICE_API_KEY
-  api-vpn-service-api-key: "${OPENBALENA_API_VPN_SERVICE_API_KEY}" # OPENBALENA_API_VPN_SERVICE_API_KEY
-  registry-secret-key: "${OPENBALENA_REGISTRY_SECRET_KEY}" # OPENBALENA_REGISTRY_SECRET_KEY
-  token-auth-builder-token: "${OPENBALENA_TOKEN_AUTH_BUILDER_TOKEN}" # OPENBALENA_TOKEN_AUTH_BUILDER_TOKEN
-  token-auth-pub: "${OPENBALENA_TOKEN_AUTH_PUB}" # OPENBALENA_TOKEN_AUTH_PUB
-  token-auth-key: "${OPENBALENA_TOKEN_AUTH_KEY}" # OPENBALENA_TOKEN_AUTH_KEY
-  token-auth-kid: "${OPENBALENA_TOKEN_AUTH_KID}" # OPENBALENA_TOKEN_AUTH_KID
+  cookie_secret: "${OPENBALENA_COOKIE_SESSION_SECRET}" # OPENBALENA_COOKIE_SESSION_SECRET
+  jwt_secret: ${OPENBALENA_JWT_SECRET} # OPENBALENA_JWT_SECRET
+  registry_code: ${OPENBALENA_RESINOS_REGISTRY_CODE} # OPENBALENA_RESINOS_REGISTRY_CODE
+  service_api_key: "${OPENBALENA_VPN_SERVICE_API_KEY}" # OPENBALENA_VPN_SERVICE_API_KEY
+  api_vpn_service_api_key: "${OPENBALENA_API_VPN_SERVICE_API_KEY}" # OPENBALENA_API_VPN_SERVICE_API_KEY
+  registry_secret_key: "${OPENBALENA_REGISTRY_SECRET_KEY}" # OPENBALENA_REGISTRY_SECRET_KEY
+  token_auth_builder_token: "${OPENBALENA_TOKEN_AUTH_BUILDER_TOKEN}" # OPENBALENA_TOKEN_AUTH_BUILDER_TOKEN
+  token_auth_pub: "${OPENBALENA_TOKEN_AUTH_PUB}" # OPENBALENA_TOKEN_AUTH_PUB
+  token_auth_key: "${OPENBALENA_TOKEN_AUTH_KEY}" # OPENBALENA_TOKEN_AUTH_KEY
+  token_auth_kid: "${OPENBALENA_TOKEN_AUTH_KID}" # OPENBALENA_TOKEN_AUTH_KID
 
 # Certificates
-certificates:
-  # Root certificates
+certificates:  # Root certificates
   root:
-    # OPENBALENA_ROOT_CA
     ca: "${OPENBALENA_ROOT_CA}"
-
-    # OPENBALENA_ROOT_CRT
     crt: "${OPENBALENA_ROOT_CRT}"
-
-    # OPENBALENA_ROOT_KEY
     key: "${OPENBALENA_ROOT_KEY}"
-
   vpn:
-    # OPENBALENA_VPN_CA
     ca: "${OPENBALENA_VPN_CA}"
-
-    # OPENBALENA_VPN_CA_CHAIN
     ca-chain: "${OPENBALENA_VPN_CA_CHAIN}"
-
-    # OPENBALENA_VPN_SERVER_CRT
     crt: "${OPENBALENA_VPN_SERVER_CRT}"
-
-    # OPENBALENA_VPN_SERVER_KEY
     server-key: "${OPENBALENA_VPN_SERVER_KEY}"
-
-    # OPENBALENA_VPN_SERVER_DH
     dh: "${OPENBALENA_VPN_SERVER_DH}"
 
-##
-## HAProxy Ingress Chart
-##
-## https://github.com/helm/charts/blob/master/incubator/haproxy-ingress/values.yaml
-##
-haproxy:
-  controller:
-    service:
-      annotations:
-        # Add DigitalOcean LoadBalancer label
-        service.beta.kubernetes.io/do-loadbalancer-name: "k8s-openbalena-vpn"
-        service.beta.kubernetes.io/do-loadbalancer-hostname: "vpn.${OPENBALENA_HOST_NAME}"
-
-      # Change the HTTPS port
-      httpsPorts:
-      - port: 8443
-        targetPort: https
-
-    # Add TCP proxies for the VPN
-    tcp:
-      443: "{{ .Release.Namespace }}/openbalena-vpn:443::PROXY-V2"
-      3128: "{{ .Release.Namespace }}/openbalena-vpn:3128"
-
-##
-## NGINX Ingress Chart$
-##
-## https://github.com/kubernetes/ingress-nginx/blob/master/charts/ingress-nginx/values.yaml
-##
-nginx:
-  controller:
-    service:
-      annotations:
-        # Add DigitalOcean LoadBalancer label
-        service.beta.kubernetes.io/do-loadbalancer-name: "k8s-openbalena"
-        service.beta.kubernetes.io/do-loadbalancer-hostname: "${OPENBALENA_HOST_NAME}"
+# ##
+# ## HAProxy Ingress Chart
+# ##
+# ## https://github.com/helm/charts/blob/master/incubator/haproxy-ingress/values.yaml
+# ##
+# haproxy:
+#   controller:
+#     service:
+#       annotations:
+#         # Add DigitalOcean LoadBalancer label
+#         service.beta.kubernetes.io/do-loadbalancer-name: "k8s-openbalena-vpn"
+#         service.beta.kubernetes.io/do-loadbalancer-hostname: "vpn.${OPENBALENA_HOST_NAME}"
+#
+#       # Change the HTTPS port
+#       httpsPorts:
+#       - port: 8443
+#         targetPort: https
+#
+#     # Add TCP proxies for the VPN
+#     tcp:
+#       443: "{{ .Release.Namespace }}/openbalena-vpn:443::PROXY-V2"
+#       3128: "{{ .Release.Namespace }}/openbalena-vpn:3128"
+#
+# ##
+# ## NGINX Ingress Chart$
+# ##
+# ## https://github.com/kubernetes/ingress-nginx/blob/master/charts/ingress-nginx/values.yaml
+# ##
+# nginx:
+#   controller:
+#     service:
+#       annotations:
+#         # Add DigitalOcean LoadBalancer label
+#         service.beta.kubernetes.io/do-loadbalancer-name: "k8s-openbalena"
+#         service.beta.kubernetes.io/do-loadbalancer-hostname: "${OPENBALENA_HOST_NAME}"

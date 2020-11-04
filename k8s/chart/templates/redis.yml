@@ -1,4 +1,5 @@
-{{- if index .Values "deployments" "redis" "enabled" }}
+{{ with .Values.deployments.redis }}
+{{- if .enabled }}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -9,7 +10,7 @@ metadata:
   name: openbalena-redis
 spec:
   serviceName: openbalena-redis
-  replicas: {{ index .Values "deployments" "redis" "replicas" }}
+  replicas: {{ .replicas }}
   selector:
     matchLabels:
       app: openbalena
@@ -22,7 +23,7 @@ spec:
         component: redis
     spec:
       containers:
-      - image: "{{ index .Values "deployments" "redis" "image" }}:{{ index .Values "deployments" "redis" "version" }}"
+      - image: "{{ .image }}:{{ .version }}"
         name: openbalena-redis
         resources: {}
         volumeMounts:
@@ -41,7 +42,7 @@ spec:
       - ReadWriteOnce
       resources:
         requests:
-          storage: {{ index .Values "deployments" "redis" "volume" "storage" }}
+          storage: {{ .volume.storage }}
 ---
 apiVersion: v1
 kind: Service
@@ -55,10 +56,11 @@ spec:
   ports:
   - port: 6379
     protocol: TCP
-    targetPort: {{ index .Values "deployments" "redis" "config" "port" }}
+    targetPort: {{ .config.port }}
   selector:
     app: openbalena
     component: redis
 status:
   loadBalancer: {}
+{{- end }}
 {{- end }}

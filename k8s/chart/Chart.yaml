@@ -23,11 +23,14 @@ version: 2.0.3
 appVersion: 1.16.0
 
 dependencies:
-- name: ingress-nginx
-  version: 2.6.0
-  alias: nginx
-  repository: "https://kubernetes.github.io/ingress-nginx"
-- name: haproxy-ingress
-  version: 0.0.26
-  alias: haproxy
-  repository: "https://kubernetes-charts-incubator.storage.googleapis.com"
+# - name: traefik
+#   alias: traefik
+#   repository: "https://kubernetes.github.io/ingress-nginx"
+# - name: ingress-nginx
+#   version: 2.6.0
+#   alias: nginx
+#   repository: "https://kubernetes.github.io/ingress-nginx"
+# - name: haproxy-ingress
+#   version: 0.0.26
+#   alias: haproxy
+#   repository: "https://kubernetes-charts-incubator.storage.googleapis.com"
