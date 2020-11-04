@@ -2,25 +2,25 @@ apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   name: openbalena-ingress
-  namespace: {{ .Values.namespace }}
+  namespace: {{ $.Values.namespace }}
   labels:
     app: openbalena
     component: ingress
   annotations:
-    {{- toYaml .Values.ingressAnnotations | nindent 4 }}
+    {{- toYaml $.Values.ingressAnnotations | nindent 4 }}
 spec:
   tls:
     - secretName: echo-tls
       hosts:
       {{ range $name, $dep := .Values.deployments -}}
       {{- if and $dep.enabled (and $dep.ingress.enabled $dep.ingress.tls) -}}
-        - {{ $dep.ingress.subdomain }}.{{ .Values.hostname }}
+        - {{ $dep.ingress.subdomain }}.{{ $.Values.hostname }}
       {{- end -}}
       {{- end }}
   rules:
   {{- range $name, $dep := .Values.deployments }}
   {{ if and $dep.enabled $dep.ingress.enabled -}}
-  - host: {{ $dep.ingress.subdomain }}.{{ .Values.hostname }}
+  - host: {{ $dep.ingress.subdomain }}.{{ $.Values.hostname }}
     http:
       paths:
       - path: /
@@ -34,7 +34,7 @@ apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   name: openbalena-ingress-vpn
-  namespace: {{ .Values.namespace }}
+  namespace: {{ $.Values.namespace }}
   labels:
     app: openbalena
     component: ingress-vpn
@@ -42,7 +42,7 @@ metadata:
     {{- toYaml .Values.vpnIngressAnnotations | nindent 4 }}
 spec:
   rules:
-  - host: {{ .Values.deployments.vpn.subdomain }}.{{ .Values.hostname }}
+  - host: {{ .Values.deployments.vpn.ingress.subdomain }}.{{ .Values.hostname }}
     http:
       paths:
       - path: /

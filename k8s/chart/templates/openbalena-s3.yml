@@ -1,5 +1,5 @@
-{{- if index .Values "deployments" "s3" "enabled" }}
-{{ with .Values.deployments.registry }}
+{{ with .Values.deployments.s3 }}
+{{- if .enabled }}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
