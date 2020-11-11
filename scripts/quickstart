@@ -84,7 +84,7 @@ fi
 
 if [ ! -z "$ACME_CERT_ENABLED" ]; then
   echo "${BLUE}[INFO]${RESET} ACME Certificate request is ${BOLD}ENABLED${RESET}."
-  
+
   if ! domainResolves "api.${DOMAIN}"; then
     echo "${YELLOW}[WARN]${RESET} Unable to resolve \"api.${DOMAIN}\"!"
     echo "${YELLOW}[WARN]${RESET} This might mean that you cannot use an ACME issued certificate."
@@ -129,7 +129,7 @@ mkdir -p "${CONFIG_DIR}/k8s";
 source "${CONFIG_DIR}/activate";
 source "${COMPOSE_DIR}/versions";
 envsubst < "${BASE_DIR}/k8s/chart/values.yaml" > "${CONFIG_DIR}/k8s/settings.yaml"
-envsubst < "${BASE_DIR}/k8s/cert-issuer.yml" > "${CONFIG_DIR}/k8s/cert-issuer.yml"
+# envsubst < "${BASE_DIR}/k8s/cert-issuer.yml" > "${CONFIG_DIR}/k8s/cert-issuer.yml"
 
 if [ "${patch_hosts}" = "true" ]; then
   echo_bold "==> Patching /etc/hosts..."
@@ -139,13 +139,20 @@ fi
 
 echo_bold "==> Success!"
 echo '  - Start the instance with: ./scripts/compose up -d'
-echo '  - Stop the instance with: ./scripts/compose stop'
+echo '  - Stop the instance with:  ./scripts/compose stop'
 echo '  - To create a single, flat, docker-compose.yml file, run:'
 echo ''
 echo '      ./scripts/compose config > docker-compose.yml'
 echo ''
 
+echo '  Or alternatively, to use Kubernetes/Helm:'
+echo '  - Tweak Configuration: nano ./config/k8s/settings.yaml'
+echo '  - Install/Update: ./scripts/k8s install'
+echo '  - Uninstall:      ./scripts/k8s uninstall'
+echo ''
+
 if [ -z "${ACME_CERT_ENABLED}" ]; then
+  echo '---'
   echo "  - Use the following certificate with Balena CLI: ${CERTS_DIR}/root/ca.crt"
 
   case $(uname) in

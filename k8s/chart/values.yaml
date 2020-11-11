@@ -2,8 +2,22 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+ # - ingress backend
+ #   - traefik
+ #    - included
+ #    - xxx external
+ #   - nginx (vpn on 8443 or other)
+ #   - nginx + haproxy
+ # - certificates
+ #    - traefik le
+ #    - cert manager
+ #      - included
+ #      - external
+
+
 # Hostname of open-balena instance
 hostname: "${OPENBALENA_HOST_NAME}" # OPENBALENA_HOST_NAME
+staging: true
 
 # General configurations
 config:
@@ -19,6 +33,7 @@ config:
 # Deployments
 deployments:
   api:
+    enabled: true
     image: balena/open-balena-api
     version: "${OPENBALENA_API_VERSION_TAG}"
     replicas: 1
@@ -26,11 +41,12 @@ deployments:
     sentry_dsn: ""
     ingress:
       enabled: true
-      annotations: {}
+      # annotations: {}
       subdomain: api
       tls: true
 
   vpn:
+    enabled: true
     image: balena/open-balena-vpn
     version: "${OPENBALENA_VPN_VERSION_TAG}"
     replicas: 1
@@ -38,18 +54,23 @@ deployments:
     sentry_dsn: ""
     ingress:
       enabled: true
-      annotations: {}
+      tcp: true
+      # annotations:
+      #   traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+      #   traefik.ingress.kubernetes.io/router.tls: "true"
+      #   ingress.kubernetes.io/ssl-redirect: "false"
       subdomain: vpn
-      tls: false
+      tls: true
       port: 443
 
   registry:
+    enabled: true
     image: balena/open-balena-registry
     version: "${OPENBALENA_REGISTRY_VERSION_TAG}"
     replicas: 1
     ingress:
-      enabled: false
-      annotations: {}
+      enabled: true
+      # annotations: {}
       subdomain: registry
       tls: true
 
@@ -74,7 +95,7 @@ deployments:
 
     ingress:
       enabled: true
-      annotations: {}
+      # annotations: {}
       subdomain: 's3'
       tls: true
 
@@ -87,8 +108,8 @@ deployments:
     replicas: 1
 
     ingress:
-      enabled: false
-      annotations: {}
+      enabled: true
+      # annotations: {}
       subdomain: db
       tls: true
 
@@ -106,9 +127,10 @@ deployments:
 
     ingress:
       enabled: false
-      annotations: {}
+      # annotations: {}
       subdomain: redis
       tls: true
+      port: 6379
 
     config:
       host: "openbalena-redis"
@@ -117,22 +139,13 @@ deployments:
     volume:
       storage: "1Gi"
 
-ingressAnnotations:
-  traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
-  traefik.ingress.kubernetes.io/router.tls: "true"
+ingressAnnotations: {}
   # cert-manager.io/cluster-issuer: "letsencrypt-prod"
-  # kubernetes.io/ingress.class: "nginx"
-  # nginx.ingress.kubernetes.io/proxy-body-size: "{{ .Values.config.client_max_body_size }}"
-
-vpnIngressAnnotations:
-  traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
-  traefik.ingress.kubernetes.io/router.tls: "true"
-  # kubernetes.io/ingress.class: "haproxy"
-  ingress.kubernetes.io/ssl-redirect: "false"
-  # - "traefik.enable=true"
-  # - "traefik.tcp.services.openVpn.loadBalancer.server.port=443"
-  # - "traefik.tcp.routers.openVpn.rule=HostSNI(`*`)"
-  # - "traefik.tcp.routers.openVpn.entrypoints=websecure"
+  # traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+  # traefik.ingress.kubernetes.io/router.tls: "true"
+  # traefik.ingress.kubernetes.io/router.tls.certresolver: le
+#   # kubernetes.io/ingress.class: "nginx"
+#   # nginx.ingress.kubernetes.io/proxy-body-size: "{{ .Values.config.client_max_body_size }}"
 
 # Keys
 keys:
@@ -159,6 +172,16 @@ certificates:  # Root certificates
     crt: "${OPENBALENA_VPN_SERVER_CRT}"
     server-key: "${OPENBALENA_VPN_SERVER_KEY}"
     dh: "${OPENBALENA_VPN_SERVER_DH}"
+
+
+# certmanager:
+#   enabled: false
+
+traefik:
+  enabled: true
+  install: false
+  useIngressRoute: true
+  certResolver: le
 
 # ##
 # ## HAProxy Ingress Chart
@@ -189,6 +212,15 @@ certificates:  # Root certificates
 # ## https://github.com/kubernetes/ingress-nginx/blob/master/charts/ingress-nginx/values.yaml
 # ##
 # nginx:
+#   controller:
+#     service:
+#       annotations:
+#         # Add DigitalOcean LoadBalancer label
+#         service.beta.kubernetes.io/do-loadbalancer-name: "k8s-openbalena"
+#         service.beta.kubernetes.io/do-loadbalancer-hostname: "${OPENBALENA_HOST_NAME}"
+
+
+# traefik:
 #   controller:
 #     service:
 #       annotations:

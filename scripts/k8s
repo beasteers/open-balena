@@ -26,7 +26,7 @@ fi
 
 # Uninstall
 if [ "$@" = "uninstall" ]; then
-  helm uninstall openbalena --namespace openbalena
+  helm uninstall openbalena -n openbalena
   kubectl delete -f "${BASE_DIR}/k8s/namespace.yml"
   kubectl delete ns cert-manager
   exit 0
@@ -35,18 +35,14 @@ fi
 install_certmanager () {
   kubectl create namespace cert-manager || true
   kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/v0.15.1/cert-manager.yaml
+  # helm repo add jetstack https://charts.jetstack.io && helm repo update
+  # helm install cert-manager jetstack/cert-manager -n cert-manager --create-namespace
 }
 
 install_openbalena () {
-  # Create namespace
-  kubectl apply -f "${BASE_DIR}/k8s/namespace.yml"
-
   # Helm
   helm dependency update "${BASE_DIR}/k8s/chart"
-  helm upgrade --install openbalena "${BASE_DIR}/k8s/chart" --namespace openbalena -f "${SETTINGS_FILE}"
-
-  # Apply cert-manager issuer
-  kubectl apply -f "${CONFIG_DIR}/k8s/cert-issuer.yml"
+  helm upgrade -i openbalena "${BASE_DIR}/k8s/chart" --namespace openbalena -f "${SETTINGS_FILE}" --create-namespace
 }
 
 # Install cert-manager only when using install command

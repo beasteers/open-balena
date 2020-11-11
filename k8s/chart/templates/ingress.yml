@@ -1,51 +1,98 @@
-apiVersion: networking.k8s.io/v1beta1
-kind: Ingress
+{{ range $name, $dep := .Values.deployments }}
+{{ if and $dep.enabled $dep.ingress.enabled }}
+# apiVersion: cert-manager.io/v1alpha2
+# kind: Certificate
+# metadata:
+#   name: {{ $name }}-cert
+#   namespace: {{ $.Release.Namespace }}
+# spec:
+#   commonName: {{ $dep.ingress.subdomain | default $name }}.{{ $.Values.hostname }}
+#   secretName: {{ $name }}-cert
+#   dnsNames:
+#     - {{ $dep.ingress.subdomain | default $name }}.{{ $.Values.hostname }}
+#   issuerRef:
+#     name: letsencrypt
+#     kind: ClusterIssuer
+# ---
+{{ if and $.Values.traefik.enabled $.Values.traefik.useIngressRoute }}
+{{ if $dep.ingress.tcp }}
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRouteTCP
 metadata:
-  name: openbalena-ingress
-  namespace: {{ $.Values.namespace }}
+  name: openbalena-ingress-{{ $name }}
+  namespace: {{ $.Release.Namespace }}
   labels:
     app: openbalena
-    component: ingress
+    component: {{ $name }}-ingress
   annotations:
-    {{- toYaml $.Values.ingressAnnotations | nindent 4 }}
+    {{- toYaml (default $.Values.ingressAnnotations $dep.ingress.annotations) | nindent 4 }}
 spec:
   tls:
-    - secretName: echo-tls
-      hosts:
-      {{ range $name, $dep := .Values.deployments -}}
-      {{- if and $dep.enabled (and $dep.ingress.enabled $dep.ingress.tls) -}}
-        - {{ $dep.ingress.subdomain }}.{{ $.Values.hostname }}
-      {{- end -}}
-      {{- end }}
-  rules:
-  {{- range $name, $dep := .Values.deployments }}
-  {{ if and $dep.enabled $dep.ingress.enabled -}}
-  - host: {{ $dep.ingress.subdomain }}.{{ $.Values.hostname }}
-    http:
-      paths:
-      - path: /
-        backend:
-          serviceName: openbalena-{{ $name }}
-          servicePort: {{ $dep.ingress.port | default 80 }}
-  {{- end -}}
-  {{- end }}
+    certResolver: {{ $.Values.traefik.certResolver }}
+  #   secretName: {{ $name }}-cert
+  entryPoints:
+    - websecure
+  routes:
+  - kind: Rule
+    match: HostSNI(`{{ $dep.ingress.subdomain | default $name }}.{{ $.Values.hostname }}`)
+    services:
+    - kind: Service
+      name: openbalena-{{ $name }}
+      namespace: {{ $.Release.Namespace }}
+      port: {{ $dep.ingress.port | default 80 }}
 ---
+{{ else }}
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: openbalena-ingress-{{ $name }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    app: openbalena
+    component: {{ $name }}-ingress
+  annotations:
+    {{- toYaml (default $.Values.ingressAnnotations $dep.ingress.annotations) | nindent 4 }}
+spec:
+  tls:
+    certResolver: {{ $.Values.traefik.certResolver }}
+  # tls:
+  #   secretName: {{ $name }}-cert
+  entryPoints:
+    - web
+    - websecure
+  routes:
+  - kind: Rule
+    match: Host(`{{ $dep.ingress.subdomain | default $name }}.{{ $.Values.hostname }}`)
+    services:
+    - kind: Service
+      name: openbalena-{{ $name }}
+      namespace: {{ $.Release.Namespace }}
+      port: {{ $dep.ingress.port | default 80 }}
+---
+{{ end }}
+{{ else }}
 apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
-  name: openbalena-ingress-vpn
-  namespace: {{ $.Values.namespace }}
+  name: openbalena-ingress-{{ $name }}
+  namespace: {{ $.Release.Namespace }}
   labels:
     app: openbalena
-    component: ingress-vpn
+    component: {{ $name }}-ingress
   annotations:
-    {{- toYaml .Values.vpnIngressAnnotations | nindent 4 }}
+    {{- toYaml (default $.Values.ingressAnnotations $dep.ingress.annotations) | nindent 4 }}
 spec:
+  # tls:
+  #   - secretName: {{ $name }}-cert
   rules:
-  - host: {{ .Values.deployments.vpn.ingress.subdomain }}.{{ .Values.hostname }}
-    http:
-      paths:
-      - path: /
-        backend:
-          serviceName: openbalena-vpn
-          servicePort: 80
+    - host: {{ $dep.ingress.subdomain | default $name }}.{{ $.Values.hostname }}
+      http:
+        paths:
+        - path: /
+          backend:
+            serviceName: openbalena-{{ $name }}
+            servicePort: {{ $dep.ingress.port | default 80 }}
+---
+{{- end }}
+{{- end }}
+{{- end }}
